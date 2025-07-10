@@ -183,7 +183,8 @@ class EducatorAgent(BaseAgent):
 
             Your goal is to ensure the story is pedagogically sound, age-appropriate, and aligned with early childhood comprehension levels.
 
-            Review the following story and provide ONLY the final polished story that is ready for a 5-year-old. 
+            Review the following story and provide ONLY the final polished story that is ready for a 5-year-old. Add a small paragraph at the end of the story that connects the topic to the story.
+            
             Do not include any explanations, reviews, or commentary - just the story itself:
 
             {story}
@@ -281,7 +282,7 @@ class StoryBot:
             story = self.storywriter.process(simple=simple)
             review = self.educator.process(story=story)
             
-            logger.info(f"\n🎉 Story creation completed successfully!")
+            logger.info(f"\nStory creation completed successfully!")
             logger.info(f"Final story length: {len(review)} characters")
             logger.info(f"{'='*60}\n")
             
