@@ -4,6 +4,8 @@ Ever wanted to understand complex topics in a way even a child can grasp? This p
 
 ## 🚀 Live Demo
 
+**🌐 [Try the Live App](https://subhammoda-story-bot-eli5-langchain.streamlit.app/)**
+
 Deployable on **Streamlit Cloud** (no CrewAI/ChromaDB/SQLite issues!)
 
 ## 🎯 What It Does
@@ -89,7 +91,7 @@ pip install -r requirements.txt
 
 ### 3. Add Your API Key
 
-Copy `.env.example` to `.env` and add your Gemini API key:
+Add your Gemini API key to .env file:
 
 ```
 GEMINI_API_KEY=your-gemini-api-key
