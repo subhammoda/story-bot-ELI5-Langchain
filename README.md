@@ -68,7 +68,6 @@ story-bot-ELI5-Langchain/
 ├── test_storybot.py                     # Testing and examples
 ├── style.css                            # Additional CSS animations
 ├── .streamlit/config.toml               # Streamlit theme configuration
-├── .env.example                         # API key config example
 ├── requirements.txt                     # Python dependencies
 ├── README.md                            # You're here!
 ```
