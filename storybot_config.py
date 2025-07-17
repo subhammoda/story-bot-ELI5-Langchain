@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 from dotenv import load_dotenv
 
 
@@ -37,17 +37,10 @@ class LLMConfig:
 class StoryBotConfig:
     """Main configuration class for the StoryBot application."""
     
-    def __init__(self, config_file: Optional[str] = None):
-        """
-        Initialize configuration.
-        
-        Args:
-            config_file: Optional path to a configuration file.
-        """
+    def __init__(self):
+        """Initialize configuration."""
         load_dotenv()
         self._load_default_config()
-        if config_file:
-            self._load_config_file(config_file)
     
     def _load_default_config(self):
         """Load default configuration values."""
@@ -95,6 +88,67 @@ class StoryBotConfig:
         # Validation
         self.min_topic_length = int(os.getenv("MIN_TOPIC_LENGTH", "3"))
         self.max_topic_length = int(os.getenv("MAX_TOPIC_LENGTH", "200"))
+        self.max_story_length = int(os.getenv("MAX_STORY_LENGTH", "5000"))
+        
+        # Age-specific configurations
+        self.age_configs = {
+            "5-8": {
+                "name": "Young Children (5-8)",
+                "emoji": "👶",
+                "description": "Very simple language, lots of repetition, basic concepts",
+                "complexity": "very_simple",
+                "vocabulary": "basic",
+                "concepts": "fundamental"
+            },
+            "9-12": {
+                "name": "Older Children (9-12)",
+                "emoji": "🧒",
+                "description": "Simple language with some challenging concepts",
+                "complexity": "simple",
+                "vocabulary": "intermediate",
+                "concepts": "basic"
+            },
+            "13-17": {
+                "name": "Teenagers (13-17)",
+                "emoji": "👨‍🎓",
+                "description": "More complex language, deeper concepts",
+                "complexity": "moderate",
+                "vocabulary": "advanced",
+                "concepts": "intermediate"
+            },
+            "18-25": {
+                "name": "Young Adults (18-25)",
+                "emoji": "👨‍💼",
+                "description": "Adult language with accessible explanations",
+                "complexity": "moderate",
+                "vocabulary": "adult",
+                "concepts": "comprehensive"
+            },
+            "26-40": {
+                "name": "Adults (26-40)",
+                "emoji": "👨‍💻",
+                "description": "Professional language with detailed explanations",
+                "complexity": "advanced",
+                "vocabulary": "professional",
+                "concepts": "detailed"
+            },
+            "41-50": {
+                "name": "Mature Adults (41-50)",
+                "emoji": "👨‍🏫",
+                "description": "Expert-level explanations with context",
+                "complexity": "expert",
+                "vocabulary": "expert",
+                "concepts": "comprehensive"
+            },
+            "50+": {
+                "name": "Senior Adults (50+)",
+                "emoji": "👴",
+                "description": "Wise, contextual explanations with life experience",
+                "complexity": "expert",
+                "vocabulary": "sophisticated",
+                "concepts": "comprehensive"
+            }
+        }
         
         # Error Messages
         self.error_messages = {
@@ -103,15 +157,6 @@ class StoryBotConfig:
             "empty_topic": "Topic cannot be empty.",
             "api_error": "An error occurred while processing your request."
         }
-    
-    def _load_config_file(self, config_file: str):
-        """Load configuration from a file (placeholder for future implementation)."""
-        # This could be extended to load from JSON, YAML, etc.
-        pass
-    
-    def get_agent_config(self, agent_name: str) -> Optional[AgentConfig]:
-        """Get configuration for a specific agent."""
-        return self.agents_config.get(agent_name)
     
     def get_all_agents(self) -> Dict[str, AgentConfig]:
         """Get all agent configurations."""
@@ -143,6 +188,53 @@ class StoryBotConfig:
     def get_error_message(self, error_type: str) -> str:
         """Get error message by type."""
         return self.error_messages.get(error_type, "An unknown error occurred.")
+    
+    def get_age_group(self, age: int) -> str:
+        """
+        Determine age group from specific age.
+        
+        Args:
+            age: The specific age in years.
+            
+        Returns:
+            Age group key (e.g., "5-8", "9-12", etc.)
+        """
+        if age <= 8:
+            return "5-8"
+        elif age <= 12:
+            return "9-12"
+        elif age <= 17:
+            return "13-17"
+        elif age <= 25:
+            return "18-25"
+        elif age <= 40:
+            return "26-40"
+        elif age <= 50:
+            return "41-50"
+        else:
+            return "50+"
+    
+    def get_age_config(self, age: int) -> dict:
+        """
+        Get age-specific configuration.
+        
+        Args:
+            age: The specific age in years.
+            
+        Returns:
+            Dictionary containing age-specific configuration.
+        """
+        age_group = self.get_age_group(age)
+        return self.age_configs.get(age_group, self.age_configs["18-25"])
+    
+    def get_age_groups(self) -> dict:
+        """
+        Get all available age groups.
+        
+        Returns:
+            Dictionary of age groups with their configurations.
+        """
+        return self.age_configs.copy()
 
 
 # Global configuration instance
@@ -155,9 +247,3 @@ def get_config() -> StoryBotConfig:
     if _config_instance is None:
         _config_instance = StoryBotConfig()
     return _config_instance
-
-
-def set_config(config: StoryBotConfig):
-    """Set the global configuration instance."""
-    global _config_instance
-    _config_instance = config 
