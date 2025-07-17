@@ -1,18 +1,15 @@
 import streamlit as st
 import os
-import sys
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Add better error handling for imports
 try:
-    from storybot_agents import StoryBot, create_storybot
+    from storybot_agents import create_storybot
     from storybot_config import get_config
     from storybot_exceptions import (
-        StoryBotException, APIKeyError, ValidationError, 
-        LLMError, AgentError, PipelineError, UIError
+        APIKeyError, ValidationError, LLMError, AgentError, PipelineError
     )
 except ImportError as e:
     st.error(f"Import error: {e}")
@@ -76,7 +73,6 @@ st.markdown("""
         margin: 0 auto;
         display: block;
     }
-    
     .stButton > button:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
@@ -164,14 +160,12 @@ st.markdown("""
         margin: 1rem 0;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
-    
     .agent-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 1rem;
         margin-top: 1rem;
     }
-    
     .agent-card {
         background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
         padding: 1rem;
@@ -208,77 +202,108 @@ except Exception as e:
 with st.container():
     st.markdown('<div class="emoji-decoration">🧠✨📚</div>', unsafe_allow_html=True)
     st.markdown('<h1 class="title-text">Story Bot LLM - Explain Like I\'m 5</h1>', unsafe_allow_html=True)
-    
     st.markdown('<p class="subtitle-text">Ever wondered how to explain <span style="background: linear-gradient(45deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: bold;">quantum physics</span>, <span style="background: linear-gradient(45deg, #764ba2, #667eea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: bold;">machine learning</span>, or even <span style="background: linear-gradient(45deg, #9f7aea, #667eea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: bold;">black holes</span> to a 5-year-old? This app uses a team of intelligent AI agents to do just that. Powered by LangChain and Gemini 2.0 Flash, it takes any topic you enter, researches it, simplifies it, and transforms it into a fun, age-appropriate story — just like a children\'s book. Whether you\'re a parent, teacher, or just curious, this is the perfect way to make complex ideas beautifully simple.</p>', unsafe_allow_html=True)
-
-# Input section with enhanced styling
-st.markdown('<div class="emoji-decoration">🎯</div>', unsafe_allow_html=True)
-st.markdown("**Enter a topic you'd like explained as a story for a 5-year-old:**")
-topic = st.text_input("Topic", 
-                      placeholder="e.g., photosynthesis, gravity, or how computers work",
-                      label_visibility="collapsed")
-
-# Generate button with enhanced styling - centered
-st.markdown('<div class="button-container">', unsafe_allow_html=True)
-if st.button("🚀 Generate Magical Story", type="primary"):
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    if not topic.strip():
-        st.markdown('<div class="warning-message">Please enter a topic to generate a story!</div>', unsafe_allow_html=True)
+    st.markdown('<div class="emoji-decoration">🎯</div>', unsafe_allow_html=True)
+    st.markdown("**Enter a topic you'd like explained as a story:**")
+    topic = st.text_input("Topic", 
+                          placeholder="e.g., photosynthesis, gravity, or how computers work",
+                          label_visibility="collapsed")
+    config = get_config()
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        st.markdown("**Select the age group for your story:**")
+        age = st.slider(
+            "Age",
+            min_value=5,
+            max_value=80,
+            value=5,
+            step=1,
+            label_visibility="collapsed"
+        )
+    with col2:
+        st.markdown("**Toggle for Simpler Language**")
+        _, col2, _ = st.columns([1, 1, 1])
+        with col2:
+            simpler_language = st.toggle(
+                "",
+                value=False,
+                help="When ON, the story will use even simpler, jargon-free language (great for older adults or anyone who prefers it)."
+            )
+            st.markdown('''
+            <style>
+                .stToggle [data-testid="stTick"] {
+                    background: #764ba2 !important;
+                    border-radius: 20px !important;
+                    box-shadow: 0 0 4px #764ba2;
+                }
+                .stToggle [data-testid="stTick"] svg {
+                    color: white !important;
+                }
+                .stToggle [data-testid="stSwitch"] {
+                    background: #e2e8f0 !important;
+                    border-radius: 20px !important;
+                    transition: background 0.3s;
+                }
+                .stToggle [aria-checked="true"] [data-testid="stSwitch"] {
+                    background: linear-gradient(45deg, #667eea, #764ba2) !important;
+                    box-shadow: 0 0 8px #764ba2;
+                }
+                .stToggle [aria-checked="false"] [data-testid="stSwitch"] {
+                    opacity: 0.5;
+                }
+            </style>
+            ''', unsafe_allow_html=True)
+    age_group = config.get_age_group(age)
+    age_config = config.get_age_config(age)
+    st.markdown(f"**Age Group:** {age_config['emoji']} {age_config['name']}")
+    st.markdown(f"*{age_config['description']}*")
+    st.markdown('<div class="button-container">', unsafe_allow_html=True)
+    if st.button("🚀 Generate Magical Story", type="primary"):
+        st.markdown('</div>', unsafe_allow_html=True)
+        if not topic.strip():
+            st.markdown('<div class="warning-message">Please enter a topic to generate a story!</div>', unsafe_allow_html=True)
+        else:
+            with st.spinner("🪄 The AI agents are working their magic..."):
+                try:
+                    result = storybot.create_story(topic, age=age, simpler_language=simpler_language)
+                    st.markdown('<div class="success-message">🎉 Story generated successfully!</div>', unsafe_allow_html=True)
+                    final_story = result.get('final_story', result['review'])
+                    st.markdown('<div class="story-container"><h3>📖 Your Story</h3> <p>' + final_story + '</p></div>', 
+                    unsafe_allow_html=True)
+                    st.markdown('<div class="emoji-decoration">🌟✨🎭</div>', unsafe_allow_html=True)
+                except Exception as e:
+                    st.markdown('<div class="error-message">Something went wrong while generating the story. Please try again.</div>', unsafe_allow_html=True)
+                    st.exception(e)
+                    st.info("If this is a deployment issue, please check the logs for more details.")
     else:
-        with st.spinner("🪄 The AI agents are working their magic..."):
-            try:
-                # Call the new StoryBot system
-                result = storybot.create_story(topic)
-                
-                st.markdown('<div class="success-message">🎉 Story generated successfully!</div>', unsafe_allow_html=True)
-                
-                # Display only the final story in a beautiful container
-                final_story = result.get('final_story', result['review'])
-                
-                st.markdown('<div class="story-container"><h3>📖 Your Story</h3> <p>' + final_story + '</p></div>', 
-                unsafe_allow_html=True)
-                
-                # Add some decorative elements
-                st.markdown('<div class="emoji-decoration">🌟✨🎭</div>', unsafe_allow_html=True)
-
-            except Exception as e:
-                st.markdown('<div class="error-message">Something went wrong while generating the story. Please try again.</div>', unsafe_allow_html=True)
-                st.exception(e)
-                st.info("If this is a deployment issue, please check the logs for more details.")
-else:
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# Agent information section
-with st.expander("🤖 Meet the AI Crew"):
-    st.markdown("""
-    <div class="agent-info">
-        <h4 style="text-align: center; margin-bottom: 1rem;">Our AI Agents Work Together to Create Perfect Stories</h4>
-        <div class="agent-grid">
-            <div class="agent-card">
-                <h5>🧑‍🔬 Researcher</h5>
-                <p style="font-size: 0.9rem;">Gathers accurate information about your topic</p>
+        st.markdown('</div>', unsafe_allow_html=True)
+    with st.expander("🤖 Meet the AI Crew"):
+        st.markdown("""
+        <div class="agent-info">
+            <h4 style="text-align: center; margin-bottom: 1rem;">Our AI Agents Work Together to Create Perfect Stories</h4>
+            <div class="agent-grid">
+                <div class="agent-card">
+                    <h5>🧑‍🔬 Researcher</h5>
+                    <p style="font-size: 0.9rem;">Gathers accurate information about your topic</p>
+                </div>
+                <div class="agent-card">
+                    <h5>📘 Simplifier</h5>
+                    <p style="font-size: 0.9rem;">Makes complex concepts easy to understand</p>
+                </div>
+                <div class="agent-card">
+                    <h5>🧙 Storywriter</h5>
+                    <p style="font-size: 0.9rem;">Creates engaging stories with fun characters</p>
+                </div>
+                <div class="agent-card">
+                    <h5>👶 Educator</h5>
+                    <p style="font-size: 0.9rem;">Reviews and ensures age-appropriate content</p>
+                </div>
             </div>
-            <div class="agent-card">
-                <h5>📘 Simplifier</h5>
-                <p style="font-size: 0.9rem;">Makes complex concepts easy to understand</p>
-            </div>
-            <div class="agent-card">
-                <h5>🧙 Storywriter</h5>
-                <p style="font-size: 0.9rem;">Creates engaging stories with fun characters</p>
-            </div>
-            <div class="agent-card">
-                <h5>👶 Educator</h5>
-                <p style="font-size: 0.9rem;">Reviews and ensures age-appropriate content</p>
-            </div>
+            <p style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: #666;">
+                💡 Check the console/terminal for detailed logs of each step!
+            </p>
         </div>
-        <p style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: #666;">
-            💡 Check the console/terminal for detailed logs of each step!
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-
-# Footer with enhanced styling
-st.markdown('<div class="footer">', unsafe_allow_html=True)
-st.markdown("**Built using LangChain, Gemini 2.0 Flash and Streamlit | © SubhamModa 2025**")
-st.markdown("</div>", unsafe_allow_html=True) 
+        """, unsafe_allow_html=True)
+    st.markdown('<div class="footer">', unsafe_allow_html=True)
+    st.markdown("**Built using LangChain, Gemini 2.0 Flash and Streamlit | © SubhamModa 2025**")
+    st.markdown("</div>", unsafe_allow_html=True) 
