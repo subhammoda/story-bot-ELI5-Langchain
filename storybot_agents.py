@@ -1,20 +1,16 @@
-import os
 import logging
 from abc import ABC, abstractmethod
 from langchain_google_genai import GoogleGenerativeAI
 from langchain.prompts import PromptTemplate
 from langchain.schema.runnable import RunnableSequence
 from langchain.schema.messages import AIMessage
-from dotenv import load_dotenv
 from typing import Dict, Any, Optional
 
 from storybot_config import get_config, AgentConfig
 from storybot_exceptions import (
-    StoryBotException, APIKeyError, ValidationError, 
-    LLMError, AgentError, PipelineError
+    APIKeyError, ValidationError, LLMError, AgentError, PipelineError
 )
 
-# Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -120,20 +116,25 @@ class SimplifierAgent(BaseAgent):
     
     def _create_chain(self) -> RunnableSequence:
         prompt = PromptTemplate(
-            input_variables=["research"],
+            input_variables=["research", "age_group_name", "complexity_level", "vocabulary_level", "concept_depth"],
             template="""
             You are a Language Simplifier and Analogy Creator with over a decade of experience working as a science communicator and education consultant. 
-            You've helped leading research institutions translate dense material into accessible content for the general public. 
-            You specialize in using analogy, metaphor, and child development principles to craft explanations that resonate with young learners. 
+            You've helped leading research institutions translate dense material into accessible content for different age groups. 
+            You specialize in using analogy, metaphor, and age-appropriate principles to craft explanations that resonate with your target audience. 
             You believe that true understanding starts with empathy for your audience.
 
-            Your goal is to convert complex topics into simple, age-appropriate explanations using analogies and clear language.
+            Your goal is to convert complex topics into age-appropriate explanations using analogies and clear language.
 
-            Take the following research summary and simplify it using analogies and very basic language that a 5-year-old can understand:
+            Age Group: {age_group_name}
+            Complexity Level: {complexity_level}
+            Vocabulary Level: {vocabulary_level}
+            Concept Depth: {concept_depth}
+
+            Take the following research summary and simplify it using analogies and language appropriate for this age group:
 
             {research}
             
-            Expected output: A simplified, analogy-rich explanation suitable for a very young child.
+            Expected output: A simplified, analogy-rich explanation suitable for the specified age group.
             """
         )
         return prompt | self.llm
@@ -147,20 +148,25 @@ class StorywriterAgent(BaseAgent):
     
     def _create_chain(self) -> RunnableSequence:
         prompt = PromptTemplate(
-            input_variables=["simple"],
+            input_variables=["simple", "age_group_name", "complexity_level", "vocabulary_level", "concept_depth"],
             template="""
             You are a Creative Storyteller with over 12 published storybooks and a background in developmental psychology. 
-            You are known for creating narratives that both engage and educate. 
-            You've spent years refining the craft of weaving core concepts into memorable stories that spark curiosity in early learners. 
+            You are known for creating narratives that both engage and educate across different age groups. 
+            You've spent years refining the craft of weaving core concepts into memorable stories that spark curiosity in learners of all ages. 
             Your storytelling style is imaginative but always grounded in a clear learning goal.
 
-            Your goal is to turn simplified concepts into engaging and imaginative stories suitable for young children.
+            Your goal is to turn simplified concepts into engaging and imaginative stories suitable for the target age group.
 
-            Create an engaging story for a 5-year-old that incorporates the following simplified explanation in a fun and imaginative way:
+            Age Group: {age_group_name}
+            Complexity Level: {complexity_level}
+            Vocabulary Level: {vocabulary_level}
+            Concept Depth: {concept_depth}
+
+            Create an engaging story for this age group that incorporates the following simplified explanation in a fun and imaginative way:
 
             {simple}
             
-            Expected output: A short children's story that teaches the concept through a narrative.
+            Expected output: A story that teaches the concept through a narrative appropriate for the specified age group.
             """
         )
         return prompt | self.llm
@@ -174,22 +180,29 @@ class EducatorAgent(BaseAgent):
     
     def _create_chain(self) -> RunnableSequence:
         prompt = PromptTemplate(
-            input_variables=["story"],
+            input_variables=["story", "age_group_name", "complexity_level", "vocabulary_level", "concept_depth"],
             template="""
-            You are an Educational Quality Reviewer with 20 years of experience in early childhood education. 
-            You've taught and designed curricula for thousands of young learners. 
-            You specialize in aligning content with cognitive and emotional development stages. 
-            You're skilled at identifying what works—and what doesn't—for ages 3-6, and you have a critical eye for making sure materials are not just entertaining, but pedagogically sound.
+            You are an Educational Quality Reviewer with 20 years of experience in education across different age groups. 
+            You've taught and designed curricula for learners of all ages. 
+            You specialize in aligning content with cognitive and emotional development stages for different age groups. 
+            You're skilled at identifying what works—and what doesn't—for various age ranges, and you have a critical eye for making sure materials are not just entertaining, but pedagogically sound.
 
-            Your goal is to ensure the story is pedagogically sound, age-appropriate, and aligned with early childhood comprehension levels.
+            Your goal is to ensure the story is pedagogically sound, age-appropriate, and aligned with the target age group's comprehension levels.
 
-            Review the following story and provide ONLY the final polished story that is ready for a 5-year-old. Add a small paragraph at the end of the story that connects the topic to the story.
+            Age Group: {age_group_name}
+            Complexity Level: {complexity_level}
+            Vocabulary Level: {vocabulary_level}
+            Concept Depth: {concept_depth}
+
+            Review the following story and provide ONLY the final polished story that is ready for this age group. Add a small paragraph at the end of the story that connects the topic to the story.
+            
+            IMPORTANT: Keep the final story under 5000 characters to ensure it's concise and engaging.
             
             Do not include any explanations, reviews, or commentary - just the story itself:
 
             {story}
             
-            Expected output: ONLY the final polished story, nothing else.
+            Expected output: ONLY the final polished story (under 5000 characters), nothing else.
             """
         )
         return prompt | self.llm
@@ -253,16 +266,18 @@ class StoryBot:
         except Exception as e:
             raise PipelineError("Failed to initialize agents", step="initialization") from e
     
-    def create_story(self, topic: str) -> Dict[str, Any]:
+    def create_story(self, topic: str, age: int = 5, simpler_language: bool = False) -> Dict[str, Any]:
         """
-        Create a complete ELI5 story from a given topic.
+        Create a complete age-appropriate story from a given topic.
         
         Args:
             topic: The topic to research and turn into a story.
-            
+            age: The target age for the story (default: 5).
+            simpler_language: If True, use even simpler, jargon-free language (for older adults or anyone who prefers it).
+        
         Returns:
             Dictionary containing the output from each agent in the pipeline.
-            
+        
         Raises:
             ValidationError: If topic is invalid.
             PipelineError: If story creation fails.
@@ -272,15 +287,65 @@ class StoryBot:
         if not is_valid:
             raise ValidationError(error_message, field="topic")
         
+        # Validate age
+        if age < 5 or age > 100:
+            raise ValidationError("Age must be between 5 and 100", field="age")
+        
+        # Get age-specific configuration
+        age_config = self.config.get_age_config(age)
+        
         try:
-            logger.info(f"\nStarting story creation for topic: '{topic}'")
+            logger.info(f"\nStarting story creation for topic: '{topic}' for age {age} ({age_config['name']}) | Simpler Language: {simpler_language}")
             logger.info(f"{'='*60}")
             
-            # Execute the pipeline
+            # Execute the pipeline with age configuration
             research = self.researcher.process(topic=topic)
-            simple = self.simplifier.process(research=research)
-            story = self.storywriter.process(simple=simple)
-            review = self.educator.process(story=story)
+            # If simpler_language is True, override complexity/vocab for extra simplicity
+            if simpler_language:
+                # Use the lowest complexity/vocab/concept settings
+                simple = self.simplifier.process(
+                    research=research,
+                    age_group_name=age_config['name'] + " (Simpler Language Mode)",
+                    complexity_level="very_simple",
+                    vocabulary_level="basic",
+                    concept_depth="fundamental"
+                )
+                story = self.storywriter.process(
+                    simple=simple,
+                    age_group_name=age_config['name'] + " (Simpler Language Mode)",
+                    complexity_level="very_simple",
+                    vocabulary_level="basic",
+                    concept_depth="fundamental"
+                )
+                review = self.educator.process(
+                    story=story,
+                    age_group_name=age_config['name'] + " (Simpler Language Mode)",
+                    complexity_level="very_simple",
+                    vocabulary_level="basic",
+                    concept_depth="fundamental"
+                )
+            else:
+                simple = self.simplifier.process(
+                    research=research, 
+                    age_group_name=age_config['name'],
+                    complexity_level=age_config['complexity'],
+                    vocabulary_level=age_config['vocabulary'],
+                    concept_depth=age_config['concepts']
+                )
+                story = self.storywriter.process(
+                    simple=simple, 
+                    age_group_name=age_config['name'],
+                    complexity_level=age_config['complexity'],
+                    vocabulary_level=age_config['vocabulary'],
+                    concept_depth=age_config['concepts']
+                )
+                review = self.educator.process(
+                    story=story, 
+                    age_group_name=age_config['name'],
+                    complexity_level=age_config['complexity'],
+                    vocabulary_level=age_config['vocabulary'],
+                    concept_depth=age_config['concepts']
+                )
             
             logger.info(f"\nStory creation completed successfully!")
             logger.info(f"Final story length: {len(review)} characters")
@@ -288,16 +353,20 @@ class StoryBot:
             
             return {
                 "topic": topic,
+                "age": age,
+                "age_group": self.config.get_age_group(age),
+                "age_config": age_config,
                 "research": research,
                 "simple": simple,
                 "story": story,
                 "review": review,
                 "final_story": review,  # For UI display
-                "agents_used": [agent.name for agent in self.agents]
+                "agents_used": [agent.name for agent in self.agents],
+                "simpler_language": simpler_language
             }
         except Exception as e:
             raise PipelineError(
-                f"Failed to create story for topic '{topic}': {str(e)}",
+                f"Failed to create story for topic '{topic}' for age {age}: {str(e)}",
                 step="story_creation"
             ) from e
     
@@ -350,15 +419,16 @@ def create_storybot(api_key: str = None, config=None) -> StoryBot:
 
 
 # Backward compatibility function
-def run_storybot_pipeline(topic: str) -> Dict[str, Any]:
+def run_storybot_pipeline(topic: str, age: int = 5) -> Dict[str, Any]:
     """
     Legacy function for backward compatibility.
     
     Args:
         topic: The topic to research and turn into a story.
+        age: The target age for the story (default: 5).
         
     Returns:
         Dictionary containing the output from each agent in the pipeline.
     """
     storybot = create_storybot()
-    return storybot.create_story(topic) 
+    return storybot.create_story(topic, age=age) 
