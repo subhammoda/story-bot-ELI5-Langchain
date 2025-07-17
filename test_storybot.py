@@ -146,6 +146,44 @@ def test_agent_retrieval():
         print(f"Agent retrieval test failed: {str(e)}")
 
 
+def test_age_adaptive_storytelling():
+    """Test age-adaptive storytelling functionality."""
+    print("\nTesting Age-Adaptive Storytelling...")
+    
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        print("No API key found. Skipping age-adaptive test.")
+        return
+    
+    try:
+        storybot = create_storybot()
+        config = get_config()
+        
+        # Test different age groups
+        ages = [6, 12, 18, 30, 45, 60]
+        
+        for age in ages:
+            # Test age configuration
+            age_config = config.get_age_config(age)
+            age_group = config.get_age_group(age)
+            
+            print(f"   Age {age}: {age_config['emoji']} {age_config['name']}")
+            print(f"      Complexity: {age_config['complexity']}")
+            print(f"      Vocabulary: {age_config['vocabulary']}")
+            print(f"      Concepts: {age_config['concepts']}")
+            
+            # Test story creation with age parameter (commented out to avoid API calls)
+            # result = storybot.create_story("gravity", age=age)
+            # assert result["age"] == age
+            # assert result["age_group"] == age_group
+            # print(f"      ✅ Story created successfully")
+        
+        print("   ✅ Age-adaptive configuration test passed!")
+        
+    except Exception as e:
+        print(f"   ❌ Age-adaptive test failed: {str(e)}")
+
+
 def main():
     """Run all tests."""
     print("Starting StoryBot OOP Tests...\n")
@@ -157,6 +195,7 @@ def main():
     if test_storybot_creation():
         test_story_creation()
         test_agent_retrieval()
+        test_age_adaptive_storytelling()
     
     print("\nAll tests completed!")
 
