@@ -6,28 +6,29 @@ Ever wanted to understand complex topics in a way even a child can grasp? This p
 
 **🌐 [Try the Live App](https://subhammoda-story-bot-eli5-langchain.streamlit.app/)**
 
-Deployable on **Streamlit Cloud** (no CrewAI/ChromaDB/SQLite issues!)
+Deployable on **Streamlit Cloud**
 
 ## 🎯 What It Does
 
-When a user inputs a topic, a multi-agent system collaborates to:
+When a user inputs a topic and selects an age, a multi-agent system collaborates to:
 
 1. **Research** the topic for accurate information.
-2. **Simplify** the technical language and concepts.
-3. **Weave a story** with age-appropriate metaphors.
-4. **Review** the story for clarity and engagement for a 5-year-old.
+2. **Simplify** the technical language and concepts for the target age group.
+3. **Weave a story** with age-appropriate metaphors and vocabulary.
+4. **Review** the story for clarity and engagement for the selected age group.
 
 ## 🧩 Features
 
 - ✨ **Natural-language input** for any topic
+- 👥 **Age-adaptive storytelling** (5-50+ years old)
 - 🧠 **Autonomous multi-agent reasoning** pipeline (LangChain/LangGraph)
 - 📖 **Age-appropriate storytelling** using Gemini 2.0 Flash
 - 📱 **Fully responsive design** for all devices
 - 🛠 **Modular and extensible** agent/task architecture
 - 🔧 **Object-Oriented Design** with proper encapsulation
-- ⚙️ **Configuration Management** system
 - 🛡️ **Custom Exception Handling** for robust error management
 - 🧪 **Testing Framework** included
+- 📝 **Simple Language Toggle**: Option to make stories even more jargon-free and accessible for all ages (great for older adults or anyone who prefers ultra-simple language)
 
 ## 🏗️ Architecture
 
@@ -52,7 +53,6 @@ The project follows **Object-Oriented Programming** principles with:
 ## 🛠 Tech Stack
 
 - LangChain — LLM framework
-- LangGraph — (optional) for agent orchestration
 - Gemini 2.0 Flash — Language model backend
 - Streamlit — UI for user interaction
 - Custom CSS — Advanced styling and animations
@@ -153,9 +153,18 @@ from storybot_agents import create_storybot
 # Create a StoryBot instance
 storybot = create_storybot()
 
-# Generate a story
+# Generate a story for a 5-year-old (default)
 result = storybot.create_story("Quantum Physics")
-print(result['story'])
+print(result['final_story'])
+
+# Generate a story for a specific age
+result = storybot.create_story("Quantum Physics", age=15)
+print(result['final_story'])
+print(f"Age group: {result['age_config']['name']}")
+
+# Generate a story with even simpler, jargon-free language (for any age)
+result = storybot.create_story("Quantum Physics", age=70, simpler_language=True)
+print(result['final_story'])
 ```
 
 ### Advanced Usage
