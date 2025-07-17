@@ -10,13 +10,6 @@ class StoryBotException(Exception):
         super().__init__(self.message)
 
 
-class ConfigurationError(StoryBotException):
-    """Raised when there's a configuration error."""
-    
-    def __init__(self, message: str, error_code: str = "CONFIG_ERROR"):
-        super().__init__(message, error_code)
-
-
 class APIKeyError(StoryBotException):
     """Raised when API key is missing or invalid."""
     
@@ -54,11 +47,3 @@ class PipelineError(StoryBotException):
     def __init__(self, message: str, step: str = None):
         self.step = step
         super().__init__(message, "PIPELINE_ERROR")
-
-
-class UIError(StoryBotException):
-    """Raised when there's an error with the user interface."""
-    
-    def __init__(self, message: str, component: str = None):
-        self.component = component
-        super().__init__(message, "UI_ERROR") 
